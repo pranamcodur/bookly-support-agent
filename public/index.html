@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bookly Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="spine" aria-hidden="true"><span>BOOKLY&nbsp;&nbsp;SUPPORT&nbsp;&nbsp;DESK</span></div>
+
+  <main class="page">
+    <header class="masthead">
+      <div class="masthead-row">
+        <div>
+          <h1>Bookly<span class="dot">.</span></h1>
+          <p class="tagline">Customer support desk — order status, returns &amp; general questions</p>
+        </div>
+        <div class="header-controls">
+          <label class="engine-toggle">
+            <span>Engine</span>
+            <select id="engineSelect">
+              <option value="llm">Claude (LLM)</option>
+              <option value="rules">Rule-based</option>
+            </select>
+          </label>
+          <div class="account-box" id="accountBox">
+            <button type="button" class="account-btn" id="loginOpenBtn">Log in</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="modal-backdrop" id="authBackdrop" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <button type="button" class="modal-close" id="authCloseBtn" aria-label="Close">&times;</button>
+
+        <div class="auth-tabs" id="authTabs">
+          <button type="button" class="auth-tab active" data-view="login">Log in</button>
+          <button type="button" class="auth-tab" data-view="register">Sign up</button>
+        </div>
+
+        <h2 class="modal-title" id="authTitle">Log in to Bookly</h2>
+
+        <form class="auth-form" id="loginForm" data-view-panel="login">
+          <label>Username<input type="text" name="username" autocomplete="username" required /></label>
+          <label>Password<input type="password" name="password" autocomplete="current-password" required /></label>
+          <p class="auth-error" data-error-for="login"></p>
+          <button type="submit" class="auth-submit">Log in</button>
+          <button type="button" class="auth-link" id="forgotPasswordLink">Forgot password?</button>
+        </form>
+
+        <form class="auth-form" id="registerForm" data-view-panel="register" hidden>
+          <label>Username<input type="text" name="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+" required /></label>
+          <label>Email<input type="email" name="email" autocomplete="email" required /></label>
+          <label>Password<input type="password" name="password" minlength="8" autocomplete="new-password" required /></label>
+          <p class="auth-hint">3-20 characters (letters/numbers/underscore) for username, 8+ characters for password.</p>
+          <p class="auth-error" data-error-for="register"></p>
+          <button type="submit" class="auth-submit">Create account</button>
+        </form>
+
+        <form class="auth-form" id="forgotForm" data-view-panel="forgot" hidden>
+          <p class="auth-hint">Enter your username or email and we'll send reset instructions.</p>
+          <label>Username or email<input type="text" name="usernameOrEmail" required /></label>
+          <p class="auth-error" data-error-for="forgot"></p>
+          <button type="submit" class="auth-submit">Send reset instructions</button>
+          <button type="button" class="auth-link" id="backToLoginLink">Back to log in</button>
+        </form>
+
+        <form class="auth-form" id="resetForm" data-view-panel="reset" hidden>
+          <p class="auth-hint" id="resetDevNote"></p>
+          <label>Reset code<input type="text" name="token" required /></label>
+          <label>New password<input type="password" name="newPassword" minlength="8" autocomplete="new-password" required /></label>
+          <p class="auth-error" data-error-for="reset"></p>
+          <button type="submit" class="auth-submit">Set new password</button>
+        </form>
+      </div>
+    </div>
+
+    <section class="chat-card">
+      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+
+      <form class="composer" id="composer">
+        <button type="button" id="micBtn" class="mic-btn" title="Speak your message" aria-label="Speak your message">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Ask about an order, a return, shipping…"
+          autocomplete="off"
+        />
+        <button type="submit" class="send-btn">Send</button>
+      </form>
+
+      <div class="hint" id="hint">
+        Try: <button class="chip" data-msg="Where is my order BK-10234?">order status</button>
+        <button class="chip" data-msg="I'd like to return something">start a return</button>
+        <button class="chip" data-msg="I have a problem with my order">"problem with my order"</button>
+        <button class="chip" data-msg="What is your return policy?">return policy</button>
+        <button class="chip" data-msg="my orders">my orders (when logged in)</button>
+        <button class="chip" data-msg="this is ridiculous, my order never showed up">frustrated customer</button>
+      </div>
+    </section>
+
+    <footer class="foot-note">Demo data only — Bookly is a fictional bookstore. Try order numbers like BK-10234, BK-10500, BK-10777, BK-10042, or log in as <strong>demo</strong> / <strong>password123</strong> to try the "my orders" shortcut.</footer>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
