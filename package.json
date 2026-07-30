@@ -1,0 +1,21 @@
+{
+  "name": "bookly-support-agent",
+  "version": "1.0.0",
+  "description": "Demo customer support agent for Bookly, a fictional online bookstore.",
+  "main": "server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node cli.js",
+    "db:reset": "node -e \"require('fs').rmSync('data', { recursive: true, force: true }); console.log('Deleted data/ — a fresh database will be created next run.')\""
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
