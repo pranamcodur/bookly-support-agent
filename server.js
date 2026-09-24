@@ -8,6 +8,8 @@ const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
 const { createAgent } = require('./lib/agentFactory');
+const { LLMBooklyAgent, MissingApiKeyError, ALL_TOOLS } = require('./lib/llmAgent');
+const systemPromptStore = require('./lib/systemPromptStore');
 const auth = require('./lib/auth');
 const orderStore = require('./lib/orderStore');
 const openapiSpec = require('./lib/openapi');
@@ -38,6 +40,12 @@ try {
 }
 
 const DEFAULT_ENGINE = process.env.AGENT_ENGINE || (process.env.ANTHROPIC_API_KEY ? 'llm' : 'rules');
+
+// Agent Admin page — clean URL (matches the /api-docs pattern) rather than
+// relying on the static middleware serving it at /agent-admin.html.
+app.get('/agent-admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'agent-admin.html'));
+});
 
 // In-memory session store: sessionId -> { agent, engine, username }.
 // Fine for a local demo; a real deployment would persist/expire these.
@@ -216,9 +224,112 @@ app.get('/api/support-tickets/config', (req, res) => {
   res.json({ zendeskConfigured: zendesk.isConfigured() });
 });
 
+// ---------------------------------------------------------------------------
+// Agent Admin: view/edit the LLM engine's system prompt (persisted to
+// data/system-prompt.txt), inspect the registered tools, see live
+// operational insights, and run isolated test conversations against a
+// candidate prompt before saving it. This bypasses agentFactory/sessions
+// deliberately — it's a dev tool for iterating on the prompt, not part of
+// the customer-facing chat path.
+// ---------------------------------------------------------------------------
+
+app.get('/api/admin/system-prompt', (req, res) => {
+  res.json({
+    prompt: systemPromptStore.getSystemPrompt(),
+    isCustomized: systemPromptStore.isCustomized(),
+    default: systemPromptStore.DEFAULT_SYSTEM_PROMPT,
+  });
+});
+
+app.post('/api/admin/system-prompt', (req, res) => {
+  try {
+    const { prompt } = req.body || {};
+    const saved = systemPromptStore.saveSystemPrompt(prompt);
+    res.json({ ok: true, prompt: saved });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message || 'Could not save prompt.' });
+  }
+});
+
+app.post('/api/admin/system-prompt/reset', (req, res) => {
+  const prompt = systemPromptStore.resetSystemPrompt();
+  res.json({ ok: true, prompt });
+});
+
+app.get('/api/admin/tools', (req, res) => {
+  res.json({ tools: ALL_TOOLS });
+});
+
+app.get('/api/admin/insights', (req, res) => {
+  const sessionList = [...sessions.values()];
+  const sessionsByEngine = sessionList.reduce((acc, s) => {
+    acc[s.engine] = (acc[s.engine] || 0) + 1;
+    return acc;
+  }, {});
+  const orders = orderStore.listOrders();
+  const ordersByStatus = orders.reduce((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  res.json({
+    activeSessions: sessionList.length,
+    sessionsByEngine,
+    loggedInSessions: sessionList.filter((s) => s.username).length,
+    guestSessions: sessionList.filter((s) => !s.username).length,
+    totalOrders: orders.length,
+    ordersByStatus,
+    zendeskConfigured: zendesk.isConfigured(),
+    systemPromptCustomized: systemPromptStore.isCustomized(),
+    defaultEngine: DEFAULT_ENGINE,
+  });
+});
+
+// One agent per admin browser tab's test conversation, keyed by a
+// client-generated testSessionId — separate from the real `sessions` map so
+// experimenting here can never collide with an actual customer session.
+const testSessions = new Map();
+
+app.post('/api/admin/test', async (req, res) => {
+  try {
+    const { testSessionId, message, prompt } = req.body || {};
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'message is required.' });
+    }
+    const id = testSessionId || crypto.randomUUID();
+    let agent = testSessions.get(id);
+    if (!agent) {
+      agent = new LLMBooklyAgent({ username: null });
+      testSessions.set(id, agent);
+    }
+    // Override with whatever's currently in the admin textarea (saved or
+    // not) — this is what lets you test a draft before committing to it.
+    // Raw override: no login-state suffix, so what you see in the box is
+    // exactly what gets sent as the system prompt.
+    if (typeof prompt === 'string' && prompt.trim()) {
+      agent.system = prompt;
+    }
+    const result = await agent.handleMessage(message);
+    res.json({ testSessionId: id, ...result });
+  } catch (err) {
+    if (err instanceof MissingApiKeyError) {
+      return res.status(400).json({ error: `LLM engine unavailable: ${err.message}` });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'Test failed.' });
+  }
+});
+
+app.post('/api/admin/test/reset', (req, res) => {
+  const { testSessionId } = req.body || {};
+  if (testSessionId) testSessions.delete(testSessionId);
+  res.json({ ok: true });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Bookly support agent demo running at http://localhost:${PORT}`);
+  console.log(`Agent Admin: http://localhost:${PORT}/agent-admin`);
   console.log(`API docs: http://localhost:${PORT}/api-docs (raw spec: /openapi.json)`);
   console.log(`Default engine: ${DEFAULT_ENGINE}${DEFAULT_ENGINE === 'llm' ? ` (model: ${process.env.ANTHROPIC_MODEL || 'claude-sonnet-5'})` : ''}`);
   console.log(`Zendesk: ${zendesk.isConfigured() ? 'real tickets (credentials found)' : 'MOCK mode (set ZENDESK_SUBDOMAIN/EMAIL/API_TOKEN for real tickets)'}`);

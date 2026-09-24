@@ -101,6 +101,17 @@ Existing local databases are migrated automatically (an `ALTER TABLE` adds the n
 `refundedDate` column on startup if it's missing) — no need to `db:reset` for this
 one, though it's always an option if you want a clean slate.
 
+## Agent Admin
+
+A dev page at **`/agent-admin`** (also linked from the top of the main chat UI) for iterating on the LLM engine's system prompt without touching code:
+
+- **Prompt tab** — the full current system prompt in an editable textarea. **Save** writes it to `data/system-prompt.txt`; **Reset to default** deletes that override. Saved edits take effect for the *next* new or reset session — not conversations already in progress, same rule as an engine/login change.
+- **Test tab** — an isolated sandbox conversation (anonymous, separate from any real customer session) that uses whatever's *currently in the Prompt tab* — saved or not — so you can try a change before committing to it. Supports multi-turn back-and-forth.
+- **Tools tab** — a read-only list of every tool registered with the LLM engine, each labeled whether it requires login (a direct view of `ACCOUNT_TOOLS` vs `GENERAL_TOOLS` from `lib/llmAgent.js`).
+- **Insights tab** — a live snapshot of this server process: active sessions (by engine, logged-in vs. guest), order counts by status, whether Zendesk/the prompt are customized. Not historical analytics — just what's true right now, refreshable on demand.
+
+Backing endpoints are under `/api/admin/*` (`GET`/`POST /api/admin/system-prompt`, `POST /api/admin/system-prompt/reset`, `GET /api/admin/tools`, `GET /api/admin/insights`, `POST /api/admin/test`) — all documented in Swagger under the **Admin** tag. This is a dev tool with no auth of its own (consistent with the other dev-utility endpoints like `/api/orders`); don't expose it publicly as-is.
+
 ## API docs (Swagger / OpenAPI)
 
 Once the server is running:
@@ -149,9 +160,15 @@ Three accounts are seeded automatically on first run (`lib/auth.js`):
 
 | Username | Password | Owns |
 |---|---|---|
-| `demo` | `password123` | `BK-10234` (in transit), `BK-10500` (delivered) |
-| `alice` | `alicepass123` | `BK-10777` (processing), `BK-20001` (delivered) |
-| `bob` | `bobpass123` | `BK-10042` (delivered 65+ days ago — outside the return window), `BK-20002` (in transit) |
+| `demo` | `password123` | `BK-10234` (in transit), `BK-10500` (delivered, eligible) |
+| `alice` | `alicepass123` | `BK-10777` (processing), `BK-20001`, `BK-30003`, `BK-30004` (all delivered, all eligible) |
+| `bob` | `bobpass123` | `BK-10042` (delivered 65+ days ago — outside the return window), `BK-20002` (in transit), `BK-30001`, `BK-30002` (delivered, eligible) |
+
+Dates are all relative to `TODAY` in `lib/tools.js` (currently `2026-09-18`) — the app's
+internal "today" for 30-day-window math, not the real calendar date. When that constant
+is updated, every seeded date should be shifted by the same amount so existing
+eligible/expired outcomes don't silently flip; see the comment above `SEED_ORDERS` in
+`lib/mockData.js`.
 
 Good things to try: log in as `alice` and ask about `BK-10042` (Bob's order — should
 be refused); log in as `bob` and try to return `BK-20002` (not yet delivered, so
@@ -324,8 +341,8 @@ curl http://localhost:3000/api/orders/BK-48213
 # Update an order (partial — only send the fields you want to change)
 curl -X PUT http://localhost:3000/api/orders/BK-48213 \
   -H "Content-Type: application/json" \
-  -d '{ "status": "Delivered", "deliveredDate": "2026-07-29", "eta": null }'
-# -> { "order": { "id": "BK-48213", "status": "Delivered", "deliveredDate": "2026-07-29", "eta": null, ... } }
+  -d '{ "status": "Delivered", "deliveredDate": "2026-09-18", "eta": null }'
+# -> { "order": { "id": "BK-48213", "status": "Delivered", "deliveredDate": "2026-09-18", "eta": null, ... } }
 
 # See the allowed status values
 curl http://localhost:3000/api/order-statuses
@@ -424,14 +441,20 @@ lib/ticketHelper.js  createSupportTicket({ username, summary, transcriptText })
 lib/agentFactory.js  createAgent(engine, { username }) — picks an engine and
                      gracefully falls back to `rules` if the LLM engine can't
                      start (missing package/API key).
+lib/systemPromptStore.js  File-backed override for the LLM engine's system
+                     prompt (data/system-prompt.txt), read fresh by every new
+                     LLMBooklyAgent so an Agent Admin edit takes effect for
+                     the next session without a restart.
 server.js            Express server: chat, auth (register/login/logout/
-                     password reset), sample-order endpoints, and a
-                     support-ticket test endpoint. Sessions are re-created
-                     when the engine or logged-in user changes.
+                     password reset), sample-order endpoints, a
+                     support-ticket test endpoint, and the Agent Admin API
+                     (/api/admin/*). Sessions are re-created when the engine
+                     or logged-in user changes.
 cli.js               Terminal front end using the same agent factory.
 public/              Chat UI (HTML/CSS/JS): engine toggle, login/sign-up/
                      password-reset modal, Web Speech API mic input, "receipt"
-                     cards for tool-backed replies (including ticket creation).
+                     cards for tool-backed replies (including ticket creation),
+                     plus agent-admin.html/.js — the prompt-editing dev page.
 ```
 
 ### Where each requirement is met (true for both engines)
@@ -460,4 +483,3 @@ a free fallback and for comparison. The LLM engine is the more capable, realisti
 version: it understands more varied phrasing, can handle follow-ups the rules engine
 wasn't explicitly coded for, and its tool-calling decisions come from the model itself
 rather than a hand-coded state machine.
-# bookly-support-agent
