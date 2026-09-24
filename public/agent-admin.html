@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decagon — Agent Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3EEDF;
+    --paper-raised: #FBF8EF;
+    --ink: #26241E;
+    --ink-soft: #57534A;
+    --forest: #24523E;
+    --forest-deep: #163326;
+    --wine: #7C2D3A;
+    --gold: #B4922C;
+    --rule: #D9D0B5;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .layout { display: flex; height: 100vh; }
+
+  /* -- side panel -- */
+  .side {
+    width: 220px; flex-shrink: 0;
+    background: var(--forest-deep); color: #fff;
+    display: flex; flex-direction: column;
+    padding: 22px 14px;
+  }
+  .side h1 {
+    font-family: 'Fraunces', serif; font-size: 19px; font-weight: 700;
+    margin: 0 0 2px; padding: 0 8px;
+  }
+  .side .sub {
+    font-size: 11.5px; color: rgba(255,255,255,0.55); margin: 0 0 26px; padding: 0 8px;
+  }
+  .navbtn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left; border: none; background: none;
+    color: rgba(255,255,255,0.78); font-family: inherit; font-size: 14.5px; font-weight: 500;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer; margin-bottom: 4px;
+  }
+  .navbtn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .navbtn.active { background: var(--gold); color: var(--forest-deep); font-weight: 600; }
+  .navbtn .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+  .nav-group-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); margin: 18px 0 6px; padding: 0 12px;
+  }
+  .nav-group-label:first-of-type { margin-top: 4px; }
+  .side .foot {
+    margin-top: auto; font-size: 11px; color: rgba(255,255,255,0.4); padding: 0 8px;
+  }
+  .side .foot a { color: rgba(255,255,255,0.65); text-decoration: none; }
+
+  /* -- main content -- */
+  .main { flex: 1; overflow-y: auto; padding: 34px 44px; }
+  .panel { display: none; max-width: 920px; }
+  .panel.active { display: block; }
+  .panel h2 {
+    font-family: 'Fraunces', serif; font-size: 26px; margin: 0 0 6px; color: var(--forest-deep);
+  }
+  .panel > .desc { color: var(--ink-soft); font-size: 14px; margin: 0 0 22px; max-width: 640px; }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+    padding: 3px 9px; border-radius: 999px; margin-left: 10px; vertical-align: middle;
+  }
+  .badge.custom { background: #F7EFDC; color: var(--gold); border: 1px solid var(--gold); }
+  .badge.default { background: var(--paper-raised); color: var(--ink-soft); border: 1px solid var(--rule); }
+  .badge.login { background: #F3E9EB; color: var(--wine); border: 1px solid var(--wine); }
+  .badge.open { background: #E9EFEA; color: var(--forest); border: 1px solid var(--forest); }
+
+  textarea#promptBox {
+    width: 100%; min-height: 420px; resize: vertical;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.55;
+    padding: 16px; border: 1px solid var(--rule); border-radius: var(--radius);
+    background: var(--paper-raised); color: var(--ink);
+  }
+  textarea#promptBox:focus { outline: 2px solid var(--forest); outline-offset: 1px; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  .btn {
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    border-radius: 999px; padding: 9px 18px; border: 1px solid var(--rule);
+    background: var(--paper-raised); color: var(--ink);
+  }
+  .btn.primary { background: var(--forest); color: #fff; border-color: var(--forest); }
+  .btn.primary:hover { background: var(--forest-deep); }
+  .btn.ghost { background: transparent; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .charcount { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+  .statusmsg { font-size: 13px; margin-top: 10px; min-height: 18px; }
+  .statusmsg.ok { color: var(--forest); }
+  .statusmsg.err { color: var(--wine); }
+
+  /* -- test panel -- */
+  .test-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .test-wrap { display: flex; flex-direction: column; height: calc(100vh - 180px); max-width: 640px; }
+  .test-actions { display: flex; flex-direction: column; gap: 10px; width: 190px; flex-shrink: 0; }
+  .test-actions .btn { width: 100%; text-align: left; }
+  .test-actions .actions-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 2px;
+  }
+  .test-log {
+    flex: 1; overflow-y: auto; border: 1px solid var(--rule); border-radius: var(--radius);
+    background: var(--paper-raised); padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg { max-width: 85%; padding: 9px 13px; border-radius: 10px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: var(--forest); color: #fff; }
+  .msg.bot { align-self: flex-start; background: #ECE6D2; border-left: 3px solid var(--forest); }
+  .msg.sys { align-self: center; font-size: 12px; color: var(--ink-soft); font-style: italic; }
+  .msg.chart-msg {
+    align-self: stretch; max-width: 100%; background: var(--paper-raised);
+    border: 1px solid var(--rule); border-radius: var(--radius); padding: 14px;
+  }
+  .msg.chart-msg svg { width: 100%; height: auto; display: block; }
+
+  .abtest-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+  .abtest-card {
+    position: relative; flex: 1; min-width: 200px; background: var(--paper-raised);
+    border: 1px solid var(--rule); border-radius: var(--radius); padding: 22px 20px 24px;
+  }
+  .abtest-badge {
+    position: absolute; top: -14px; right: -14px; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--gold); display: flex; align-items: center; justify-content: center;
+    color: #fff; box-shadow: 0 4px 10px rgba(22,51,38,0.18);
+  }
+  .abtest-card h4 { margin: 4px 0 20px; font-family: 'Fraunces', serif; font-size: 16px; color: var(--forest-deep); }
+  .abtest-metric { margin-bottom: 18px; }
+  .abtest-metric:last-child { margin-bottom: 0; }
+  .abtest-metric .abtest-value { font-family: 'Fraunces', serif; font-weight: 700; font-size: 32px; line-height: 1; }
+  .abtest-metric.winner .abtest-value { color: var(--gold); }
+  .abtest-metric.runnerup .abtest-value { color: var(--ink); }
+  .abtest-metric .variant-label { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+  .test-composer { display: flex; gap: 8px; margin-top: 12px; }
+  .test-composer input {
+    flex: 1; border: 1px solid var(--rule); border-radius: 999px; padding: 10px 15px;
+    font-family: inherit; font-size: 14px; background: var(--paper-raised); color: var(--ink);
+  }
+
+  /* -- tools panel -- */
+  .tool-card {
+    border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper-raised);
+    padding: 16px 18px; margin-bottom: 12px;
+  }
+  .tool-card .name { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--forest-deep); }
+  .tool-card .desc { font-size: 13px; color: var(--ink-soft); margin: 6px 0 10px; }
+  .tool-card .params { font-size: 12px; color: var(--ink-soft); }
+  .tool-card .params code { background: var(--paper); padding: 1px 5px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  .tools-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .tools-main { flex: 1; min-width: 0; }
+  .integrations-panel { width: 230px; flex-shrink: 0; }
+  .integrations-panel .actions-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 10px;
+  }
+  .integrations-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .integration-btn {
+    width: calc(50% - 5px); box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    border: 1px solid var(--rule); background: var(--paper-raised); border-radius: 10px;
+    padding: 12px 6px 10px; cursor: pointer; font-family: inherit;
+  }
+  .integration-btn:hover { border-color: var(--forest); box-shadow: 0 2px 8px rgba(22,51,38,0.08); }
+  .integration-badge {
+    width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: 'Fraunces', serif; font-weight: 700; font-size: 15px;
+  }
+  .integration-btn .integration-name { font-size: 11.5px; font-weight: 600; color: var(--ink); text-align: center; line-height: 1.2; }
+
+  /* -- query box (Observability) -- */
+  .query-box { margin-top: 26px; border-top: 1px solid var(--rule); padding-top: 22px; max-width: 720px; }
+  .query-form { display: flex; gap: 8px; margin: 10px 0 18px; }
+  .query-form input {
+    flex: 1; border: 1px solid var(--rule); border-radius: 999px; padding: 10px 16px;
+    font-family: inherit; font-size: 14px; background: var(--paper-raised); color: var(--ink);
+  }
+  .query-presets { display: flex; flex-direction: column; gap: 14px; margin-bottom: 8px; }
+  .query-category-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 6px;
+  }
+  .query-chip {
+    display: inline-block; margin: 0 8px 8px 0; border: 1px solid var(--rule); background: var(--paper-raised);
+    border-radius: 999px; padding: 7px 14px; font-size: 12.5px; font-family: inherit;
+    color: var(--forest-deep); cursor: pointer; text-align: left;
+  }
+  .query-chip:hover { border-color: var(--forest); }
+  .query-answer-card {
+    border: 1px solid var(--gold); border-radius: var(--radius); background: #F7EFDC;
+    padding: 16px 18px; margin-top: 14px; font-size: 13.5px; line-height: 1.6; color: var(--ink);
+  }
+  .query-answer-card .query-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 8px;
+  }
+  .query-answer-card .query-question { font-weight: 600; margin: 0 0 10px; color: var(--forest-deep); }
+
+  /* -- insights panel -- */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper-raised);
+    padding: 16px 18px;
+  }
+  .stat-card .num { font-family: 'Fraunces', serif; font-size: 30px; font-weight: 700; color: var(--forest-deep); }
+  .stat-card .label { font-size: 12.5px; color: var(--ink-soft); margin-top: 2px; }
+  .breakdown { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper-raised); padding: 16px 18px; margin-bottom: 14px; }
+  .breakdown h3 { font-size: 13px; margin: 0 0 10px; color: var(--forest-deep); }
+  .breakdown-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; border-bottom: 1px solid var(--rule); }
+  .breakdown-row:last-child { border-bottom: none; }
+  .refresh-link { font-size: 12.5px; color: var(--wine); cursor: pointer; text-decoration: underline; }
+
+  /* -- Operational Cost Savings chart -- */
+  .cost-savings-hero { text-align: center; margin: 4px 0 20px; }
+  .cost-savings-figure { font-family: 'Fraunces', serif; font-weight: 700; font-size: 42px; color: var(--gold); line-height: 1; }
+  .cost-savings-label { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
+  .cost-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; justify-content: center; }
+  .cost-step {
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 9px 12px; text-align: center; min-width: 88px;
+  }
+  .cost-step.highlight { border-color: var(--forest); background: #E9EFEA; }
+  .cost-step.final { border-color: var(--gold); background: #F7EFDC; }
+  .cost-step-value { font-family: 'Fraunces', serif; font-weight: 700; font-size: 16px; color: var(--forest-deep); }
+  .cost-step.final .cost-step-value { color: var(--gold); font-size: 18px; }
+  .cost-step-label { font-size: 10px; color: var(--ink-soft); margin-top: 2px; line-height: 1.2; }
+  .cost-op { font-size: 17px; font-weight: 700; color: var(--ink-soft); padding: 0 2px; }
+  .cost-formula {
+    text-align: center; font-size: 12.5px; color: var(--ink-soft); margin-top: 16px;
+    padding-top: 12px; border-top: 1px solid var(--rule);
+  }
+
+  /* -- CSAT panel -- */
+  .chart-card {
+    border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper-raised);
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  .chart-card h3 { font-size: 14px; margin: 0 0 2px; color: var(--forest-deep); }
+  .chart-card .chart-sub { font-size: 12px; color: var(--ink-soft); margin: 0 0 12px; }
+  .chart-card svg { width: 100%; display: block; }
+  .chart-axis-label { font-size: 10px; fill: var(--ink-soft); font-family: 'Inter', sans-serif; }
+  .chart-grid { stroke: var(--rule); stroke-width: 1; }
+  .stat-card .delta { font-size: 11.5px; margin-top: 4px; font-weight: 600; }
+  .stat-card .delta.up { color: var(--forest); }
+  .stat-card .delta.down { color: var(--wine); }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side">
+      <h1>Decagon<span style="color:var(--gold)">.</span></h1>
+      <p class="sub">Agent Admin</p>
+
+      <p class="nav-group-label">Build</p>
+      <button class="navbtn active" data-panel="prompt"><span class="dot"></span> AOP</button>
+      <button class="navbtn" data-panel="tools"><span class="dot"></span> Tools</button>
+
+      <p class="nav-group-label">Optimize</p>
+      <button class="navbtn" data-panel="test"><span class="dot"></span> Test</button>
+
+      <p class="nav-group-label">Scale</p>
+      <button class="navbtn" data-panel="insights"><span class="dot"></span> Observability</button>
+      <button class="navbtn" data-panel="csat"><span class="dot"></span> Analytics</button>
+
+      <p class="foot">Dev tool — edits affect new conversations only.<br><a href="/">&larr; Back to chat</a></p>
+    </nav>
+
+    <main class="main">
+      <!-- Prompt -->
+      <section class="panel active" id="panel-prompt">
+        <h2>Agent Operating Procedure <span class="badge default" id="promptBadge">default</span></h2>
+        <p class="desc">This is the Agent Operating Procedure sent to the Decagon Engine for every LLM-engine conversation. Saved edits are written to <code>data/system-prompt.txt</code> and take effect for the next new or reset session — not for conversations already in progress.</p>
+        <textarea id="promptBox" spellcheck="false"></textarea>
+        <div class="toolbar">
+          <button class="btn primary" id="saveBtn">Save</button>
+          <button class="btn ghost" id="resetBtn">Reset to default</button>
+          <span class="charcount" id="charCount"></span>
+        </div>
+        <p class="statusmsg" id="promptStatus"></p>
+      </section>
+
+      <!-- Test -->
+      <section class="panel" id="panel-test">
+        <h2>Test</h2>
+        <p class="desc">Tries the <strong>current text in the AOP tab</strong> (saved or not) against the real LLM engine, anonymously, in an isolated sandbox conversation — separate from any real customer session.</p>
+        <div class="test-layout">
+          <div class="test-wrap">
+            <div class="test-log" id="testLog"></div>
+            <form class="test-composer" id="testComposer">
+              <input type="text" id="testInput" placeholder="Type a test message…" autocomplete="off" />
+              <button type="submit" class="btn primary">Send</button>
+              <button type="button" class="btn ghost" id="testResetBtn">New conversation</button>
+            </form>
+          </div>
+          <div class="test-actions">
+            <p class="actions-label">Actions</p>
+            <button type="button" class="btn ghost test-action-btn" data-action="Enable A/B Testing">Enable A/B Testing</button>
+            <button type="button" class="btn ghost test-action-btn" data-action="Self Improve">Self Improve</button>
+            <button type="button" class="btn ghost test-action-btn" data-action="Transcript Analysis">Transcript Analysis</button>
+            <button type="button" class="btn ghost test-action-btn" data-action="Find Gaps">Find Gaps</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tools -->
+      <section class="panel" id="panel-tools">
+        <h2>Tools</h2>
+        <p class="desc">Every tool currently registered with the LLM engine. Tools marked "requires login" are omitted from the API request entirely for logged-out sessions — the Decagon Engine has no way to call them, not just an instruction not to.</p>
+        <div class="tools-layout">
+          <div class="tools-main">
+            <div id="toolsList">Loading…</div>
+          </div>
+          <div class="integrations-panel">
+            <p class="actions-label">Integrations</p>
+            <div class="integrations-grid">
+              <button type="button" class="integration-btn" data-integration="Salesforce"><span class="integration-badge" style="background:#00A1E0;">S</span><span class="integration-name">Salesforce</span></button>
+              <button type="button" class="integration-btn" data-integration="Zendesk"><span class="integration-badge" style="background:#17494D;">Z</span><span class="integration-name">Zendesk</span></button>
+              <button type="button" class="integration-btn" data-integration="Google Drive"><span class="integration-badge" style="background:#4285F4;">G</span><span class="integration-name">Google Drive</span></button>
+              <button type="button" class="integration-btn" data-integration="Stripe"><span class="integration-badge" style="background:#635BFF;">S</span><span class="integration-name">Stripe</span></button>
+              <button type="button" class="integration-btn" data-integration="Slack"><span class="integration-badge" style="background:#4A154B;">S</span><span class="integration-name">Slack</span></button>
+              <button type="button" class="integration-btn" data-integration="Notion"><span class="integration-badge" style="background:#191919;">N</span><span class="integration-name">Notion</span></button>
+              <button type="button" class="integration-btn" data-integration="Shopify"><span class="integration-badge" style="background:#5E8E3E;">S</span><span class="integration-name">Shopify</span></button>
+              <button type="button" class="integration-btn" data-integration="HubSpot"><span class="integration-badge" style="background:#FF7A59;">H</span><span class="integration-name">HubSpot</span></button>
+              <button type="button" class="integration-btn" data-integration="Adobe"><span class="integration-badge" style="background:#DA1F26;">A</span><span class="integration-name">Adobe</span></button>
+              <button type="button" class="integration-btn" data-integration="SharePoint"><span class="integration-badge" style="background:#038387;">S</span><span class="integration-name">SharePoint</span></button>
+            </div>
+            <p class="statusmsg" id="integrationStatus"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Insights -->
+      <section class="panel" id="panel-insights">
+        <h2>Observability <span class="refresh-link" id="refreshInsights">refresh</span></h2>
+        <p class="desc">Live snapshot of this server process's in-memory state — not historical analytics, just what's true right now.</p>
+        <div id="insightsBody">Loading…</div>
+
+        <div class="query-box">
+          <p class="actions-label">Ask analytics a question</p>
+          <form class="query-form" id="queryForm">
+            <input type="text" id="queryInput" placeholder="Ask a question, or pick one below…" autocomplete="off" />
+            <button type="submit" class="btn primary">Run</button>
+          </form>
+
+          <div class="query-presets">
+            <div class="query-category">
+              <p class="query-category-label">Root-Cause Analysis</p>
+              <button type="button" class="query-chip" data-query="Why are customers requesting refunds this week?">Why are customers requesting refunds this week?</button>
+              <button type="button" class="query-chip" data-query="What are the top reasons for order cancellations on mobile vs. web?">What are the top reasons for order cancellations on mobile vs. web?</button>
+            </div>
+            <div class="query-category">
+              <p class="query-category-label">Voice of Customer (VoC) Insights</p>
+              <button type="button" class="query-chip" data-query="What feature requests surface most frequently in voice calls?">What feature requests surface most frequently in voice calls?</button>
+              <button type="button" class="query-chip" data-query="What products are driving the most user frustration?">What products are driving the most user frustration?</button>
+            </div>
+            <div class="query-category">
+              <p class="query-category-label">Sentiment &amp; Friction Audits</p>
+              <button type="button" class="query-chip" data-query="Show me conversations where the customer expressed high frustration before dropping off.">Show me conversations where the customer expressed high frustration before dropping off.</button>
+            </div>
+            <div class="query-category">
+              <p class="query-category-label">Compliance &amp; Data Privacy Flags</p>
+              <button type="button" class="query-chip" data-query="Find any interactions where unmasked PII, credit card details, or HIPAA-restricted data were mentioned.">Find any interactions where unmasked PII, credit card details, or HIPAA-restricted data were mentioned.</button>
+            </div>
+          </div>
+
+          <div id="queryAnswer"></div>
+        </div>
+      </section>
+
+      <!-- CSAT -->
+      <section class="panel" id="panel-csat">
+        <h2>Analytics</h2>
+        <p class="desc">CSAT (customer satisfaction), deflection rate, and response time over the last 14 days.</p>
+        <div id="csatBody"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/agent-admin.js"></script>
+</body>
+</html>

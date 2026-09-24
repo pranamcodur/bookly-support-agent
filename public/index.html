@@ -79,38 +79,94 @@
       </div>
     </div>
 
-    <section class="chat-card">
-      <div class="chat-log" id="chatLog" aria-live="polite"></div>
+    <div class="storefront">
+      <section class="books-section">
+        <h2>Featured books</h2>
+        <div class="books-grid">
+          <div class="book-card">
+            <div class="book-cover cover-1">The Midnight Library</div>
+            <p class="book-title">The Midnight Library</p>
+            <p class="book-author">Matt Haig</p>
+            <p class="book-price">$14.99</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-2">Atomic Habits</div>
+            <p class="book-title">Atomic Habits</p>
+            <p class="book-author">James Clear</p>
+            <p class="book-price">$8.99</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-3">Dune</div>
+            <p class="book-title">Dune</p>
+            <p class="book-author">Frank Herbert</p>
+            <p class="book-price">$12.99</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-4">Project Hail Mary</div>
+            <p class="book-title">Project Hail Mary</p>
+            <p class="book-author">Andy Weir</p>
+            <p class="book-price">$11.50</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-5">Sapiens</div>
+            <p class="book-title">Sapiens</p>
+            <p class="book-author">Yuval Noah Harari</p>
+            <p class="book-price">$17.50</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-6">Circe</div>
+            <p class="book-title">Circe</p>
+            <p class="book-author">Madeline Miller</p>
+            <p class="book-price">$10.99</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-7">The Way of Kings</div>
+            <p class="book-title">The Way of Kings</p>
+            <p class="book-author">Brandon Sanderson</p>
+            <p class="book-price">$15.99</p>
+          </div>
+          <div class="book-card">
+            <div class="book-cover cover-8">The Hobbit</div>
+            <p class="book-title">The Hobbit</p>
+            <p class="book-author">J.R.R. Tolkien</p>
+            <p class="book-price">$9.99</p>
+          </div>
+        </div>
+      </section>
 
-      <form class="composer" id="composer">
-        <button type="button" id="micBtn" class="mic-btn" title="Speak your message" aria-label="Speak your message">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
-            <line x1="12" y1="18" x2="12" y2="22"/>
-            <line x1="8" y1="22" x2="16" y2="22"/>
-          </svg>
-        </button>
-        <input
-          type="text"
-          id="messageInput"
-          placeholder="Ask about an order, a return, shipping…"
-          autocomplete="off"
-        />
-        <button type="submit" class="send-btn">Send</button>
-      </form>
+      <section class="chat-card">
+        <div class="chat-log" id="chatLog" aria-live="polite"></div>
 
-      <div class="hint" id="hint">
-        Try: <button class="chip" data-msg="Where is my order BK-10234?">order status</button>
-        <button class="chip" data-msg="I'd like to return something">start a return</button>
-        <button class="chip" data-msg="I have a problem with my order">"problem with my order"</button>
-        <button class="chip" data-msg="What is your return policy?">return policy</button>
-        <button class="chip" data-msg="my orders">my orders (when logged in)</button>
-        <button class="chip" data-msg="this is ridiculous, my order never showed up">frustrated customer</button>
-      </div>
-    </section>
+        <form class="composer" id="composer">
+          <button type="button" id="micBtn" class="mic-btn" title="Speak your message" aria-label="Speak your message">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+              <line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="8" y1="22" x2="16" y2="22"/>
+            </svg>
+          </button>
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Ask about an order, a return, shipping…"
+            autocomplete="off"
+          />
+          <button type="submit" class="send-btn">Send</button>
+        </form>
 
-    <footer class="foot-note">Demo data only — Bookly is a fictional bookstore. Try order numbers like BK-10234, BK-10500, BK-10777, BK-10042, or log in as <strong>demo</strong> / <strong>password123</strong> to try the "my orders" shortcut.</footer>
+        <div class="hint" id="hint">
+          Try: <button class="chip" data-msg="Where is my order BK-10234?">order status</button>
+          <button class="chip" data-msg="I'd like to return something">start a return</button>
+          <button class="chip" data-msg="I have a problem with my order">"problem with my order"</button>
+          <button class="chip" data-msg="What is your return policy?">return policy</button>
+          <button class="chip" data-msg="my orders">my orders (when logged in)</button>
+          <button class="chip" data-msg="this is ridiculous, my order never showed up">frustrated customer</button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="foot-note">Bookly — The bookstore. Try order numbers like BK-10234, BK-10500, BK-10777, BK-10042.</footer>
   </main>
 
   <script src="/app.js"></script>
